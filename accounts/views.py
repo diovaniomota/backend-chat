@@ -15,6 +15,8 @@ from accounts.models import User
 
 from core.utils.exceptions import ValidationError
 
+import uuid 
+
 class SignInView(APIView, Authentication):
     permission_classes = [AllowAny]
 
@@ -58,4 +60,65 @@ class SignUpView(APIView, Authentication):
         return Response({
             "user": user,
             "access_token": str(access_token)
+        })
+    
+class UserView(APIView):
+    def get(self, request):
+        # Update last_access
+        User.objects.filter(id=request.user.id).update(last_access=now())
+
+        user = UserSerializer(request.user).data
+
+        return Response({
+            "user": user
+        })
+    
+    def put(self, request):
+        name = request.data.get('name')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        avatar = request.FILES.get('avatar')
+
+        # Initialize storage 
+        storage = FileSystemStorage(
+            location=settings.MEDIA_ROOT / "avatars",
+            base_url=settings.MEDIA_URL + "avatars"
+        )
+
+        if avatar:
+            content_type = avatar.content_type
+            extension = avatar.name.split('.')[-1]
+
+            # validate avatar 
+            if content_type not in ["image/png", "image/jpeg"]:
+                raise ValidationError("Somente arquivos do tipo PNG ou JPEG são suportados")
+            
+            # Save new avatar
+            file = storage.save(f"{uuid.uuid4()}.{extension}", avatar)
+            avatar = storage.url(file)
+
+        serializer = UserSerializer(request.user, data={
+            "name": name,
+            "email": email,
+            "avatar": avatar or request.user.avatar
+        })
+
+        if not serializer.is_valid():
+            # Delete uploaded file if validation fails
+            if avatar:
+                storage.delete(avatar.split("/")[-1])
+            first_error = list(serializer.errors.values())[0][0]
+            raise ValidationError(first_error)
+        
+        # Delete old avatar if new one is uploaded
+        if avatar and request.user.avatar != "/media/avatars/default-avatar.png":
+            storage.delete(request.user.avatar.split("/")[-1])
+
+        # Update user data and password
+        if password:
+            request.user.set_password(password)
+        serializer.save()
+
+        return Response({
+            "user": serializer.data 
         })
