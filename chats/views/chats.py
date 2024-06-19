@@ -31,7 +31,7 @@ class ChatsView(BaseView):
         email = request.data.get('email')
 
         # Getting user
-        user = self.get__user(email=email)
+        user = self.get_user(email=email)
 
         #Checking if chat already exists
         chat = self.has_existing_chat(user_id=request.user.id, to_user=user.id)

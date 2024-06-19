@@ -1,17 +1,17 @@
 from rest_framework.views import APIView
 from django.db.models import Q
 from django.utils.timezone import now
+from typing import Union
 
 from accounts.models import User
-from chats.models import Chat, ChatMessage  # Corrigir o nome do modelo para ChatMessage
+from chats.models import Chat, ChatMessage  
 from chats.utils.exceptions import UserNotFound, ChatNotFound
 from chats.serializers import ChatSerializer
 
-
 class BaseView(APIView):
     # Get User by any field
-    def get_user(self, raise_exception=True, **kwargs) -> User | None:
-        user = User.objects.filter(**kwargs).first()  # Corrigir erro de digitação
+    def get_user(self, raise_exception=True, **kwargs) -> Union[User, None]:
+        user = User.objects.filter(**kwargs).first()  
 
         if not user and raise_exception:
             raise UserNotFound
@@ -19,7 +19,7 @@ class BaseView(APIView):
         return user
     
     # Checking if chat already exists for user_id and to_user
-    def has_existing_chat(self, user_id, to_user) -> Chat | None:
+    def has_existing_chat(self, user_id, to_user) -> Union[Chat, None]:
         chat = Chat.objects.filter(
             (Q(from_user=user_id) & Q(to_user=to_user)) | 
             (Q(from_user=to_user) & Q(to_user=user_id)),
@@ -29,8 +29,8 @@ class BaseView(APIView):
         if chat:
             return ChatSerializer(chat, context={'user_id': user_id}).data
 
-    # Checking if chat delongs to user or not 
-    def chat_belongs_to_user(self, chat_id, user_id) -> Chat | None:
+    # Checking if chat belongs to user or not 
+    def chat_belongs_to_user(self, chat_id, user_id) -> Union[Chat, None]:
         chat = Chat.objects.filter(
             Q(from_user=user_id) | Q(to_user=user_id),
             id=chat_id,
@@ -46,7 +46,7 @@ class BaseView(APIView):
     def mark_messages_as_seen(self, chat_id, user_id) -> None:
         ChatMessage.objects.filter(
             chat_id=chat_id,
-            viewes_at__isnull=True,
+            viewed_at__isnull=True,
             deleted_at__isnull=True,
         ).exclude(
             from_user=user_id

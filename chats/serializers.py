@@ -13,7 +13,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ['id', 'last_message', 'unseen_count', 'user', 'viewes_at', 'created_at']
+        fields = ['id', 'last_message', 'unseen_count', 'user', 'viewed_at', 'created_at']
 
     def get_user(self, chat):
         user = chat.from_user
