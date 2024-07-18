@@ -5,7 +5,7 @@ from chats.views.base import BaseView
 from chats.models import Chat, ChatMessage
 from chats.serializers import ChatMessagesSerializer
 
-from attachments.models import FileAttachment, AudioAttachment
+from attachments.models import FileAttachment, AudioAttachments  
 
 from rest_framework.response import Response
 
@@ -112,7 +112,7 @@ class ChatMessagesView(BaseView):
             src = storage.url(audio)
 
             # Save new attachment
-            attachment = AudioAttachment.objects.create(
+            attachment = AudioAttachments.objects.create(
                 src=src
             )
 
